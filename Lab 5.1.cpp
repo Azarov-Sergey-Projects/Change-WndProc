@@ -1,6 +1,5 @@
 ﻿// Lab 5.1.cpp : Определяет точку входа для приложения.
 //
-
 #include <windows.h>
 #include <tchar.h>
 
@@ -8,11 +7,12 @@ LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK newWndProc(HWND, UINT, WPARAM, LPARAM);
 
 
-void DrawBitmap(HWND, HDC hDC, int x, int y, HBITMAP hBitmap);
+void DrawBitmap(HWND, HDC hDC, int x, int y, HBITMAP hBitmap, LPARAM);
 HWND Button;
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, PSTR szCmdLine, int iCmdShow)
 {
 	TCHAR szClassName[] = TEXT("Мой класс");
+	HWND hWnd;
 	MSG msg;
 	WNDCLASSEX wc;
 	wc.cbSize = sizeof(wc);
@@ -32,27 +32,15 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, PSTR szCmdLine, int
 		MessageBox(NULL, TEXT("Не получилось зарегистрировать класс!"), TEXT("Ошибка"), MB_OK);
 		return NULL;
 	}
-	HWND hWnd = CreateWindow(
-		szClassName,
-		TEXT("Лабораторная работа №5"),
-		WS_OVERLAPPED | WS_SYSMENU | WS_VSCROLL,
-		CW_USEDEFAULT,
-		NULL,
-		CW_USEDEFAULT,
-		NULL,
-		static_cast<HWND>(NULL),
-		NULL,
-		static_cast<HINSTANCE>(hInst),
-		NULL);
-	if (!hWnd)
-	{
+	hWnd = CreateWindow(szClassName, TEXT("Лабораторая работа 5"), WS_OVERLAPPEDWINDOW | WS_VSCROLL, CW_USEDEFAULT, NULL, CW_USEDEFAULT, NULL, static_cast<HWND>(NULL), NULL, static_cast<HINSTANCE>(hInst), NULL);
+	if (!hWnd) {
+
 		MessageBox(NULL, TEXT("Не получилось создать окно!"), TEXT("Ошибка"), MB_OK);
 		return NULL;
 	}
-	Button = CreateWindow(TEXT("Button"), TEXT("Press me"), WS_CHILD | WS_VISIBLE | CS_DBLCLKS | WS_SYSMENU, 500, 300, 130, 130, hWnd, reinterpret_cast<HMENU>(1), hInst, NULL);
 	ShowWindow(hWnd, iCmdShow);
+	Button = CreateWindow(TEXT("Button"), TEXT("Press me"), WS_CHILD | WS_VISIBLE | CS_DBLCLKS | WS_SYSMENU, 500, 300, 130, 130, hWnd, reinterpret_cast<HMENU>(1), hInst, NULL);
 	UpdateWindow(hWnd);
-
 	while (GetMessage(&msg, NULL, NULL, NULL))
 	{
 		TranslateMessage(&msg);
@@ -61,7 +49,6 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, PSTR szCmdLine, int
 	return msg.wParam;
 	DestroyWindow(Button);
 }
-
 
 
 
@@ -115,20 +102,19 @@ LRESULT CALLBACK newWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	PAINTSTRUCT ps;
 	RECT rect;
 	GetClientRect(hWnd, &rect);
-	RECT rect_old;
-	HBITMAP hBit = static_cast<HBITMAP>(LoadImage(NULL, TEXT("hBitMap.bmp"), NULL, 500, 500, LR_LOADFROMFILE));
+	static RECT rect_old;
+	HBITMAP hBit = static_cast<HBITMAP>(LoadImage(NULL, TEXT("hBitMap.bmp"), NULL, rect.right / 3, rect.bottom / 3, LR_LOADFROMFILE));
 
 	switch (uMsg)
 	{
-	case WM_SIZING:
+	case WM_SIZE:
 		hDC = GetDC(hWnd);
 		GetClientRect(hWnd, &rect_old);
-		StretchBlt(hDC, rect_old.left, rect_old.top, rect_old.right, rect_old.bottom, hDC, rect.left, rect.top, rect.right, rect.bottom, DSTINVERT);
+		hBit = static_cast<HBITMAP>(LoadImage(NULL, TEXT("hBitMap.bmp"), NULL, rect_old.right / 3, rect_old.bottom / 3, LR_LOADFROMFILE));
 		ReleaseDC(hWnd, hDC);
 	case WM_PAINT:
-		RedrawWindow(hWnd, NULL, NULL, RDW_ERASENOW);
 		hDC = BeginPaint(hWnd, &ps);
-		DrawBitmap(hWnd, hDC, 300, 150, hBit);
+		DrawBitmap(hWnd, hDC, rect.right / 3, rect.bottom / 3, hBit, lParam);
 		EndPaint(hWnd, &ps);
 		break;
 	case WM_COMMAND:
@@ -152,7 +138,7 @@ LRESULT CALLBACK newWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 }
 
 
-void DrawBitmap(HWND hWnd, HDC hDC, int x, int y, HBITMAP hBitmap)
+void DrawBitmap(HWND hWnd, HDC hDC, int x, int y, HBITMAP hBitmap, LPARAM lParam)
 {
 	RECT rect;
 	HBITMAP hbm, hOldbm;
@@ -160,7 +146,6 @@ void DrawBitmap(HWND hWnd, HDC hDC, int x, int y, HBITMAP hBitmap)
 	BITMAP bm;
 	POINT  ptSize, ptOrg;
 	hMemDC = CreateCompatibleDC(hDC);
-	GetClientRect(hWnd, &rect);
 	hOldbm = (HBITMAP)SelectObject(hMemDC, hBitmap);
 
 	if (hOldbm)
@@ -178,9 +163,8 @@ void DrawBitmap(HWND hWnd, HDC hDC, int x, int y, HBITMAP hBitmap)
 		DPtoLP(hMemDC, &ptOrg, 1);
 
 
-		BitBlt(hDC, x, y, ptSize.x, ptSize.y,
-			hMemDC, ptOrg.x, ptOrg.y, SRCCOPY);
-
+		BitBlt(hDC, x, y, ptSize.x, ptSize.y, hMemDC, 0, 0, SRCCOPY);
+		//StretchBlt(hDC, x, y, ptSize.x, ptSize.y, hMemDC, 0, 0, bm.bmWidth, bm.bmHeight, SRCCOPY);
 
 		SelectObject(hMemDC, hOldbm);
 	}
