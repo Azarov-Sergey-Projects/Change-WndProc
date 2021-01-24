@@ -2,9 +2,16 @@
 //
 #include <windows.h>
 #include <tchar.h>
+#include <winuser.h>
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK newWndProc(HWND, UINT, WPARAM, LPARAM);
+
+
+int constexpr TIMER_ID= 10;
+static int click_count = 0;
+static POINT point = { 0 };
+
 
 
 void DrawBitmap(HWND, HDC hDC, int x, int y, HBITMAP hBitmap, LPARAM);
@@ -32,14 +39,14 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, PSTR szCmdLine, int
 		MessageBox(NULL, TEXT("Не получилось зарегистрировать класс!"), TEXT("Ошибка"), MB_OK);
 		return NULL;
 	}
-	hWnd = CreateWindow(szClassName, TEXT("Лабораторая работа 5"), WS_OVERLAPPEDWINDOW | WS_VSCROLL, CW_USEDEFAULT, NULL, CW_USEDEFAULT, NULL, static_cast<HWND>(NULL), NULL, static_cast<HINSTANCE>(hInst), NULL);
+	hWnd = CreateWindow(szClassName, TEXT("Лабораторая работа 5"),  WS_OVERLAPPEDWINDOW | WS_VSCROLL, CW_USEDEFAULT, NULL, CW_USEDEFAULT, NULL, static_cast<HWND>(NULL), NULL, static_cast<HINSTANCE>(hInst), NULL);
 	if (!hWnd) {
 
 		MessageBox(NULL, TEXT("Не получилось создать окно!"), TEXT("Ошибка"), MB_OK);
 		return NULL;
 	}
 	ShowWindow(hWnd, iCmdShow);
-	Button = CreateWindow(TEXT("Button"), TEXT("Press me"), WS_CHILD | WS_VISIBLE | CS_DBLCLKS | WS_SYSMENU, 500, 300, 130, 130, hWnd, reinterpret_cast<HMENU>(1), hInst, NULL);
+	Button = CreateWindow(TEXT("Button"), TEXT("Press me"),  WS_CHILD | WS_VISIBLE| WS_SYSMENU, 500, 300, 130, 130, hWnd, reinterpret_cast<HMENU>(1), hInst, NULL);
 	UpdateWindow(hWnd);
 	while (GetMessage(&msg, NULL, NULL, NULL))
 	{
@@ -58,14 +65,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	HDC hDC;
 	PAINTSTRUCT ps;
 	RECT rect;
-
+	SetDoubleClickTime(500);
 	HBRUSH hBrush;
+	INT xPos, yPos;
 	switch (uMsg)
 	{
 	case  WM_CREATE:
 		InvalidateRect(hWnd, NULL, TRUE);
 
 		break;
+	case WM_TIMER:
+	
+		KillTimer(hWnd, TIMER_ID);
+		click_count = 0;
+		break;
+	
 	case WM_PAINT:
 		RedrawWindow(hWnd, NULL, NULL, RDW_ERASENOW);
 		hDC = GetDC(hWnd);
@@ -79,17 +93,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
+	
 	case WM_COMMAND:
-	{
-	case WM_LBUTTONDBLCLK:
-		if (lParam == reinterpret_cast<LPARAM>(Button))
+		if (click_count == 0)
+		{
+			SetTimer(hWnd, TIMER_ID, GetDoubleClickTime(), NULL);
+		}
+		click_count++;
+		if ((lParam == reinterpret_cast<LPARAM>(Button))&&click_count==2)
 		{
 			InvalidateRect(hWnd, NULL, TRUE);
 			SetWindowLongPtr(hWnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(&newWndProc));
 		}
 		break;
-
-	}
 	}
 	return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
@@ -107,6 +123,11 @@ LRESULT CALLBACK newWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 	switch (uMsg)
 	{
+	case WM_TIMER:
+		KillTimer(hWnd, TIMER_ID);
+		
+		click_count = 0;
+		break;
 	case WM_SIZE:
 		hDC = GetDC(hWnd);
 		GetClientRect(hWnd, &rect_old);
@@ -119,14 +140,16 @@ LRESULT CALLBACK newWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_COMMAND:
 	{
-	case WM_LBUTTONDBLCLK:
-	{
-		if (lParam == reinterpret_cast<LPARAM>(Button))
+		if (click_count == 0)
+		{
+			SetTimer(hWnd, TIMER_ID, GetDoubleClickTime(), NULL);
+		}
+		click_count++;
+		if (lParam == reinterpret_cast<LPARAM>(Button) && click_count == 2)
 		{
 			InvalidateRect(hWnd, NULL, TRUE);
 			SetWindowLongPtr(hWnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(&WndProc));
 		}
-	}
 	break;
 	}
 	case WM_DESTROY:
