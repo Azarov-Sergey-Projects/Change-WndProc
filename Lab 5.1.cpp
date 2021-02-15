@@ -118,7 +118,6 @@ LRESULT CALLBACK newWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	RECT rect;
 	GetClientRect(hWnd, &rect);
 	static RECT rect_old;
-	static INT xP, yP;
 	HBITMAP hBit = static_cast<HBITMAP>(LoadImage(NULL, TEXT("hBitMap.bmp"), NULL, rect.right / 3, rect.bottom / 3, LR_LOADFROMFILE));
 	switch (uMsg)
 	{
@@ -129,21 +128,7 @@ LRESULT CALLBACK newWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_SIZE:
 		hDC = GetDC(hWnd);
 		GetClientRect(hWnd, &rect_old);
-		if (rect_old.right < 500 && rect_old.bottom < 500)
-		{
-			rect_old.right = 1000;
-			rect_old.bottom = 1000;
-		}
-		xP = rect_old.right / 30;
-		yP = rect_old.bottom / 20;
-		if (yP < 200 && xP < 200)
-		{
-			SetWindowPos(Button, NULL, rect_old.right / 2 - 100, rect_old.bottom / 2, 100, 100, NULL);
-		}
-		else
-		{
-			SetWindowPos(Button, NULL, rect_old.right / 2 - 50, rect_old.bottom / 2, xP, yP, NULL);
-		}
+		SetWindowPos(Button, NULL, rect_old.right / 2, rect_old.bottom / 2, 50, 50, NULL);
 		hBit = static_cast<HBITMAP>(LoadImage(NULL, TEXT("hBitMap.bmp"), NULL, rect_old.right / 3, rect_old.bottom / 3, LR_LOADFROMFILE));
 		ReleaseDC(hWnd, hDC);
 	case WM_PAINT:
